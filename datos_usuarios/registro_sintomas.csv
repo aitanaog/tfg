@@ -1,0 +1,6 @@
+﻿id_usuario;fecha;malestar;estornudos;rinitis;conjuntivitis;picor_garganta;tos;asma;dolor_cabeza;picor_nasal;opresion_toracica;erupcion;mucosidad;medicacion;comentarios
+Eva;2026-03-23;0;False;True;False;False;False;False;False;True;True;False;False;No;
+Aitana;2026-03-23;2;False;False;False;False;False;False;False;False;False;False;False;No;
+Eva;2026-03-23;0;False;False;False;False;False;False;False;False;False;False;False;No;
+Irune;2026-03-23;0;False;False;False;False;False;False;False;False;False;False;False;No;
+Maite;2026-03-23;0;False;False;False;False;False;False;False;False;False;False;False;No;
