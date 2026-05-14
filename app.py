@@ -6,7 +6,13 @@ from scripts.gestion_usuarios import obtener_perfil_usuario, validar_login, regi
 from scripts.actualizador_api import actualizar_desde_api
 from scripts.analizador_niveles import obtener_color_alerta
 from scripts.config import umbrales_polen
+import zipfile
+import os
 
+if not os.path.exists('modelos_entrenados'):
+    with zipfile.ZipFile('modelos.zip', 'r') as zip_ref:
+        zip_ref.extractall('.')
+        
 # 1. CONFIGURACIÓN INICIAL
 st.set_page_config(page_title="PolenGune", page_icon="🌿", layout="wide")
 
