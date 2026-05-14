@@ -6,9 +6,15 @@ from scripts.gestion_usuarios import obtener_perfil_usuario, validar_login, regi
 from scripts.actualizador_api import actualizar_desde_api
 from scripts.analizador_niveles import obtener_color_alerta
 from scripts.config import umbrales_polen
+import zipfile
+import os
 
-# 1. CONFIGURACIÓN INICIAL (DEBE SER LO PRIMERO)
-st.set_page_config(page_title="TFG Polen Euskadi", page_icon="🌿", layout="wide")
+if not os.path.exists('modelos_entrenados'):
+    with zipfile.ZipFile('modelos.zip', 'r') as zip_ref:
+        zip_ref.extractall('.')
+        
+# 1. CONFIGURACIÓN INICIAL
+st.set_page_config(page_title="PolenGune", page_icon="🌿", layout="wide")
 
 # 2. INICIALIZACIÓN DE VARIABLES DE SESIÓN
 if 'logueado' not in st.session_state:
@@ -27,7 +33,7 @@ if st.session_state['logueado']:
 
     # --- MOTOR DE DATOS Y PREDICCIÓN ---
     if not st.session_state['actualizado_hoy']:
-        with st.spinner("Sincronizando con estaciones y ejecutando IA..."):
+        with st.spinner("Sincronizando con estaciones y ejecutando predicción..."):
             try:
                 actualizar_desde_api()
                 from scripts.predictor import predecir_siguientes_dias
@@ -37,7 +43,7 @@ if st.session_state['logueado']:
             except Exception as e:
                 st.error(f"Error en la actualización de datos: {e}")
 
-    # --- SIDEBAR ---
+    # --- SIDEBAR DE LA CUENTA ---
     with st.sidebar:
         st.header("⚙️ Mi Cuenta")
         st.write(f"👤 **Usuario:** {st.session_state['id_usuario']}")
@@ -63,130 +69,159 @@ if st.session_state['logueado']:
         ayer2 = fecha_actual - datetime.timedelta(days=2)
         ayer1 = fecha_actual - datetime.timedelta(days=1)
         hoy = fecha_actual
-        manana = fecha_actual + datetime.timedelta(days=1)
-        dias_interes = [ayer2, ayer1, hoy, manana]
+        mañana = fecha_actual + datetime.timedelta(days=1)
+        dias_interes = [ayer2, ayer1, hoy, mañana]
 
-# --- MODO A: USUARIO DIAGNOSTICADO ---
+        # --- MODO A: USUARIO DIAGNOSTICADO ---
         if perfil['diagnosticado'] == "Si":
-            alergia = perfil['alergia_principal']
-            st.subheader(f"📊 Seguimiento Crítico: {alergia}")
+            alergia_principal = perfil['alergia_principal']
+            st.subheader(f"📊 Seguimiento Crítico: {alergia_principal}")
             
-            # 1. MÉTRICAS PRINCIPALES
-            etiquetas = ["Hace 2 días", "Ayer", "Hoy (Pred)", "Mañana (Pred)"]
-            cols = st.columns(4)
-            valor_manana = 0.0 # Para la alerta posterior
+            # 1. MÉTRICAS EN GRANDE (ALERGIA PRINCIPAL)
+            etiquetas = ["Hace 2 días", "Ayer", "Predicción de hoy", "Predicción de mañana"]
+            cols_principal = st.columns(4)
+            valor_mañana_principal = 0.0 
 
             for i, fecha in enumerate(dias_interes):
                 dato = df_ciudad[df_ciudad['Fecha'] == fecha]
-                valor_num = float(dato[alergia].values[0]) if not dato.empty else 0.0
-                if fecha == manana: valor_manana = valor_num
+                valor_num = float(dato[alergia_principal].values[0]) if not dato.empty else 0.0
+                if fecha == mañana: valor_mañana_principal = valor_num
                 
-                nivel, _ = obtener_color_alerta(alergia, valor_num)
-                with cols[i]:
+                nivel, _ = obtener_color_alerta(alergia_principal, valor_num)
+                with cols_principal[i]:
                     st.metric(label=etiquetas[i], value=f"{valor_num:.2f}", delta=nivel)
 
-            # 2. PANEL DE PREVENCIÓN PERSONALIZADA
+            # ---------------------------------------------------------
+            # SECCIÓN:OTROS PÓLENES 
+            # ---------------------------------------------------------
+            st.write("---")
+            st.subheader("🌐 Otros niveles en tu zona (Hoy)")
+            
+            # Identificamos todas las columnas de polen excepto Fecha, Ciudad y la Principal
+            columnas_polen = [col for col in df_ciudad.columns if col not in ['Fecha', 'Ciudad', 'Año']]
+            otros_polenes = [col for col in columnas_polen if col != alergia_principal]
+            
+            # Creamos un grid de 4 columnas para que no ocupe demasiado espacio vertical
+            cols_otros = st.columns(4)
+            dato_hoy = df_ciudad[df_ciudad['Fecha'] == hoy]
+
+            for idx, col_polen in enumerate(otros_polenes):
+                valor_hoy = float(dato_hoy[col_polen].values[0]) if not dato_hoy.empty else 0.0
+                nivel_otros, _ = obtener_color_alerta(col_polen, valor_hoy)
+                
+                # Repartimos en las 4 columnas
+                with cols_otros[idx % 4]:
+                    # Usamos un formato algo más compacto para que no compita con la principal
+                    st.write(f"**{col_polen}**")
+                    st.caption(f"{valor_hoy:.1f} - {nivel_otros}")
+
+            # ---------------------------------------------------------
+            # 2. PANEL DE PREVENCIÓN PERSONALIZADA (ALERGIA PRINCIPAL)
+            # ---------------------------------------------------------
             st.divider()
-            nivel_manana, _ = obtener_color_alerta(alergia, valor_manana)
+            nivel_manana, _ = obtener_color_alerta(alergia_principal, valor_manana_principal)
             
             col_info, col_recom = st.columns([1, 1])
 
             with col_info:
                 st.write(f"### 🛡️ Estado para mañana")
                 if nivel_manana in ["Alto", "Muy Alto"]:
-                    st.error(f"⚠️ **ALERTA CRÍTICA:** Se espera un nivel {nivel_manana.upper()} de {alergia}.")
+                    st.error(f"⚠️ **ALERTA CRÍTICA:** Nivel {nivel_manana.upper()} de {alergia_principal}.")
                 elif nivel_manana == "Moderado":
-                    st.warning(f"🔔 **PRECAUCIÓN:** Niveles moderados detectados para mañana.")
+                    st.warning(f"🔔 **PRECAUCIÓN:** Niveles moderados para mañana.")
                 else:
-                    st.success(f"✅ **DÍA TRANQUILO:** Los niveles de tu alergia serán bajos.")
+                    st.success(f"✅ **DÍA TRANQUILO:** Niveles bajos de {alergia_principal}.")
 
             with col_recom:
                 st.write("### 📋 Recomendaciones")
                 if nivel_manana in ["Alto", "Muy Alto"]:
                     st.write("- Use mascarilla FFP2 en exteriores.")
                     st.write("- Evite hacer deporte al aire libre.")
-                    st.write("- Al volver a casa, dúchese y cámbiese de ropa.")
                 elif nivel_manana == "Moderado":
                     st.write("- Ventile la casa solo al amanecer o atardecer.")
-                    st.write("- Use gafas de sol para proteger la conjuntiva.")
+                    st.write("- Use gafas de sol.")
                 else:
-                    st.write("- Puede realizar actividades normales al aire libre.")
-            # 3. GRÁFICA DE EVOLUCIÓN (SÍNTOMAS VS POLEN)
-            st.write("### 📈 Tu evolución última semana")
-            try:
-                df_s = pd.read_csv('datos_usuarios/registro_sintomas.csv', sep=';')
-                df_s['fecha'] = pd.to_datetime(df_s['fecha']).dt.date
-                df_u = df_s[df_s['id_usuario'] == st.session_state['id_usuario']]
-                
-                # Unimos con los datos de polen de la ciudad
-                df_plot = pd.merge(df_u, df_ciudad[['Fecha', alergia]], left_on='fecha', right_on='Fecha')
-                
-                if not df_plot.empty:
-                    # Normalizamos para que se vean bien en la misma gráfica
-                    st.line_chart(df_plot.set_index('fecha')[['malestar', alergia]])
-                    st.caption(f"Comparativa: Nivel de malestar (0-10) vs Concentración de {alergia}")
-                else:
-                    st.info("Registra tus síntomas unos días más para ver tu gráfica comparativa.")
-            except:
-                pass
+                    st.write("- Puede realizar actividades normales.")
+
+
 
         # --- MODO B: NO DIAGNOSTICADO ---
         else:
-            st.subheader("🔎 Resumen General de Pólenes")
-            columnas_excluir = ['Fecha', 'Ciudad', 'Año', 'Anio', 'Mes', 'Dia', 'Unnamed: 0']
+            st.subheader("🔎 Estado de los Pólenes Hoy")
+            st.write("A continuación se muestran las especies con niveles significativos en tu ciudad.")
+            
+            columnas_excluir = ['Fecha', 'Ciudad', 'Año', 'Mes', 'Dia', 'Unnamed: 0']
             plantas = [c for c in df_ciudad.columns if c not in columnas_excluir]
             
-            datos_tab = []
-            
-            # 1. Definimos la función de extracción
-            def extraer_con_riesgo(fila, col):
-                if not fila.empty:
+            # Obtenemos los datos de hoy y mañana
+            fila_hoy = df_ciudad[df_ciudad['Fecha'] == hoy]
+            fila_mañana = df_ciudad[df_ciudad['Fecha'] == mañana]
+
+            # Creamos contenedores para organizar la vista
+            col_alertas, col_bajos = st.columns([2, 1])
+
+            with col_alertas:
+                st.markdown("### ⚠️ Niveles Moderados / Altos")
+                hay_alertas = False
+                
+                for p in plantas:
                     try:
-                        val = float(fila[col].values[0])
-                        nivel, _ = obtener_color_alerta(col, val)
-                        return f"{val:.2f} ({nivel})"
-                    except: return "0.00 (-)"
-                return "0.00 (-)"
+                        val_hoy = float(fila_hoy[p].values[0]) if not fila_hoy.empty else 0.0
+                        val_mañana = float(fila_mañana[p].values[0]) if not fila_mañana.empty else 0.0
+                        nivel, _ = obtener_color_alerta(p, val_hoy)
 
-            # 2. Llenamos la lista de datos (FUERA de cualquier elemento de Streamlit)
-            for p in plantas:
-                f_ayer = df_ciudad[df_ciudad['Fecha'] == ayer1]
-                f_hoy = df_ciudad[df_ciudad['Fecha'] == hoy]
-                f_man = df_ciudad[df_ciudad['Fecha'] == manana]
+                        # Solo mostramos en esta columna si el riesgo no es bajo
+                        if nivel != "Bajo":
+                            hay_alertas = True
+                            # Calculamos tendencia
+                            tendencia = "Subiendo 📈" if val_man > val_hoy else "Bajando 📉"
+                            if abs(val_man - val_hoy) < 0.1: tendencia = "Estable ➡️"
+
+                            with st.expander(f"**{p}**: {val_hoy:.1f} ({nivel})", expanded=True):
+                                c1, c2 = st.columns(2)
+                                c1.metric("Hoy", f"{val_hoy:.1f}")
+                                c2.metric("Mañana (Pred)", f"{val_man:.1f}", delta=tendencia, delta_color="normal")
+                    except:
+                        continue
                 
-                datos_tab.append({
-                    "Tipo de Polen": p, 
-                    "Ayer (Real)": extraer_con_riesgo(f_ayer, p), 
-                    "Hoy (Predicción)": extraer_con_riesgo(f_hoy, p), 
-                    "Mañana (Predicción)": extraer_con_riesgo(f_man, p)
-                })
-            
-            # 3. Mostramos la tabla UNA SOLA VEZ
-            if datos_tab:
-                st.table(pd.DataFrame(datos_tab))
-            else:
-                st.warning("No hay datos suficientes para mostrar la comparativa.")
+                if not hay_alertas:
+                    st.success("No hay niveles de riesgo detectados para hoy. ¡Día tranquilo!")
 
-            # 4. SECCIÓN DE PRE-DIAGNÓSTICO (Debajo de la tabla)
+            with col_bajos:
+                st.markdown("### 🟢 Niveles Bajos")
+                # Lista compacta para los pólenes que no preocupan
+                for p in plantas:
+                    try:
+                        val_hoy = float(fila_hoy[p].values[0]) if not fila_hoy.empty else 0.0
+                        nivel, _ = obtener_color_alerta(p, val_hoy)
+                        if nivel == "Bajo":
+                            st.caption(f"✅ {p}: {val_hoy:.1f}")
+                    except:
+                        continue
+
+
+
+
+            # 3. SECCIÓN DE PRE-DIAGNÓSTICO (Más limpia)
             st.divider()
-            st.subheader("🧬 Asistente de Diagnóstico IA")
-            st.write("Nuestra IA analiza la relación entre tus síntomas y los niveles de polen de los últimos 30 días.")
+            col_ia_text, col_ia_btn = st.columns([2, 1])
+            with col_ia_text:
+                st.subheader("🧬 Asistente de Diagnóstico ")
+                st.write("¿Notas malestar pero no sabes a qué polen? Analizaremos tus últimos 30 días.")
             
-            if st.button("Analizar mis últimos 30 días"):
+            with col_ia_btn:
+                btn_analizar = st.button("🚀 Iniciar Análisis de Inteligencia Artificial", use_container_width=True)
+
+            if btn_analizar:
                 from scripts.analizador_diagnostico import generar_sugerencia_diagnostico
-                
-                with st.spinner("Analizando correlaciones biológicas..."):
+                with st.spinner("Analizando correlaciones..."):
                     resultado, mensaje = generar_sugerencia_diagnostico(st.session_state['id_usuario'], perfil['ciudad'])
-                    
-                    if resultado == "Insuficiente":
+                    if resultado in ["Insuficiente", "Error"]:
                         st.warning(mensaje)
-                    elif resultado == "Error":
-                        st.error(f"No se pudo realizar el análisis: {mensaje}")
                     else:
-                        st.success("¡Análisis completado!")
-                        st.markdown(f"### 🎯 Resultado: Posible alergia a **{resultado}**")
+                        st.balloons()
+                        st.success(f"### 🎯 Posible sensibilidad: **{resultado}**")
                         st.info(mensaje)
-                        st.caption("⚠️ Recuerda: Este informe es orientativo basado en estadística. Consulta siempre a un alergólogo.")
 
     except Exception as e:
         st.error(f"Hubo un problema al cargar los datos: {e}")
@@ -205,7 +240,7 @@ if st.session_state['logueado']:
             help="0: Sin síntomas, 10: Malestar extremo"
         )
         
-        # 2. Checkboxes de síntomas específicos (LISTA ACTUALIZADA)
+        # 2. Checkboxes de síntomas específicos 
         st.write("**Selecciona los síntomas que presentas hoy:**")
         
         col_s1, col_s2, col_s3 = st.columns(3)
@@ -266,12 +301,40 @@ if st.session_state['logueado']:
             df_s.to_csv(ruta_sintomas, mode='a', index=False, header=header, sep=';', encoding='utf-8-sig')
             
             st.success("✅ Registro guardado correctamente.")
-
+            st.divider()
+    st.subheader("📂 Exportar Historial Médico")
+    col_pdf1, col_pdf2 = st.columns([2, 1])
+    
+    with col_pdf1:
+        st.write("Genera un documento PDF profesional con la evolución de tus síntomas y niveles de polen para facilitar el diagnóstico de tu alergólogo.")
+    
+    with col_pdf2:
+        if st.button("📄 Generar Informe PDF", use_container_width=True):
+            from scripts.generador_pdf import exportar_pdf
+            
+            # Determinamos si enviamos una alergia específica o no
+            alergia_usr = perfil['alergia_principal'] if perfil['diagnosticado'] == "Sí" else None
+            
+            with st.spinner("Compilando datos y generando PDF..."):
+                exito, resultado = exportar_pdf(st.session_state['id_usuario'], perfil['ciudad'], alergia_usr)
+            
+            if exito:
+                with open(resultado, "rb") as f:
+                    st.download_button(
+                        label="📥 Descargar ahora",
+                        data=f,
+                        file_name=os.path.basename(resultado),
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+                st.success("¡Informe listo!")
+            else:
+                st.error(f"No se pudo generar el informe: {resultado}")
 else:
     # ==========================================
     # PANTALLA: LOGIN / REGISTRO (SI NO ESTÁ LOGUEADO)
     # ==========================================
-    st.title("🌿 Control de Alergias Euskadi")
+    st.title("🌿 PolenGune : Control de Alergias Euskadi")
     choice = st.sidebar.selectbox("Acceso", ["Login", "Registro"])
 
     if choice == "Login":

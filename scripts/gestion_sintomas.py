@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 # Configuración de rutas
-RUTA_SINTOMAS = os.path.join(os.path.dirname(__file__), '..', 'datos_usuarios', 'diario_sintomas.csv')
+RUTA_SINTOMAS = os.path.join(os.path.dirname(__file__), '..', 'datos_usuarios', 'registro_sintomas.csv')
 
 # Diccionario oficial de síntomas para tu TFG
 SINTOMAS_LISTA = [
@@ -32,10 +32,7 @@ def inicializar_diario():
         df.to_csv(RUTA_SINTOMAS, index=False, sep=';')
 
 def registrar_entrada_salud(id_usuario, fecha, ciudad, nivel, sintomas_activos, notas=""):
-    """
-    id_usuario: str (ej: 'aitana_99')
-    sintomas_activos: lista con los nombres de los síntomas que el usuario marcó
-    """
+
     inicializar_diario()
     
     # Creamos un diccionario para la nueva fila
@@ -49,7 +46,7 @@ def registrar_entrada_salud(id_usuario, fecha, ciudad, nivel, sintomas_activos, 
     
     # Ponemos 1 si el síntoma se marcó, 0 si no
     for s in SINTOMAS_LISTA:
-        nueva_fila[s] = 1 if s in sintomas_activos else 0
+        nueva_fila[s] = True if s in sintomas_activos else False
     
     df_nuevo = pd.DataFrame([nueva_fila])
     
@@ -64,7 +61,7 @@ def registrar_entrada_salud(id_usuario, fecha, ciudad, nivel, sintomas_activos, 
     df_final.to_csv(RUTA_SINTOMAS, index=False, sep=';')
     print(f"✅ Diario actualizado para el usuario {id_usuario}")
 
-# Ejemplo de cómo lo llamaría la interfaz de tu móvil:
+# Ejemplo
 if __name__ == "__main__":
     # El usuario marcó picor de ojos y estornudos
     mis_sintomas_de_hoy = ['Irritacion_ocular', 'Estornudos']
