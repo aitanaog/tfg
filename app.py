@@ -10,7 +10,7 @@ import zipfile
 import os
 
 if not os.path.exists('modelos_entrenados'):
-    with zipfile.ZipFile('modelos.zip', 'r') as zip_ref:
+    with zipfile.ZipFile('modelos_entrenados.zip', 'r') as zip_ref:
         zip_ref.extractall('.')
         
 # 1. CONFIGURACIÓN INICIAL
