@@ -4,7 +4,7 @@ import joblib
 import os
 from scripts.config import sintomas_polen
 
-CARPETA_MODELOS = 'modelos_entrenados'
+carpeta_modelos = 'modelos_entrenados'
 
 def predecir_siguientes_dias(ciudad):
     ruta_csv = 'datos_procesados/polen_euskadi_final.csv'
@@ -25,7 +25,7 @@ def predecir_siguientes_dias(ciudad):
     for esp in especies:
         # 1. Intentar cargar el modelo específico que creó tu script
         nombre_modelo = f"modelo_{ciudad}_{esp.replace('/', '_')}.pkl"
-        ruta_modelo = os.path.join(CARPETA_MODELOS, nombre_modelo)
+        ruta_modelo = os.path.join(carpeta_modelos, nombre_modelo)
         
         if os.path.exists(ruta_modelo):
             modelo = joblib.load(ruta_modelo)

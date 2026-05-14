@@ -7,37 +7,37 @@ from datetime import datetime, timedelta
 # 1. Configuración de rutas
 # Añadimos la raíz al path para poder importar el archivo config.py
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from scripts.config import MUNICIPIOS, MAPEO_ESPECIES
+from scripts.config import municipios, mapeo_especies
 
 # Ruta al CSV histórico
-RUTA_CSV = os.path.join(os.path.dirname(__file__), '..', 'C:\\Users\\wence\\OneDrive\\Escritorio\\Universidad\\openJdk-25\\TFG_Aitana\\datos_procesados', 'polen_euskadi_final.csv')
+ruta_csv = os.path.join(os.path.dirname(__file__), '..', 'datos_procesados', 'polen_euskadi_final.csv')
 
 def actualizar_desde_api():
-    print("🚀 Iniciando sincronización con Open Data Euskadi...")
+    print("Iniciando sincronización con Open Data Euskadi...")
     
-    # 2. Definir ventana de tiempo (últimos 15 días)
+    # 2. ventana de tiempo = últimos 15 días
     hoy = datetime.now()
-    fecha_inicio_dt = hoy - timedelta(days=15)
+    fecha_inicio_dt = hoy - timedelta(days=90)
     
     fecha_inicio = fecha_inicio_dt.strftime('%Y-%m-%d')
     fecha_fin = hoy.strftime('%Y-%m-%d')
     
-    print(f"📅 Ventana de actualización: del {fecha_inicio} al {fecha_fin}")
+    print(f" Ventana de actualización: del {fecha_inicio} al {fecha_fin}")
 
     # 3. Leer el CSV actual
-    if not os.path.exists(RUTA_CSV):
-        print(f"❌ Error: No se encuentra el archivo en {RUTA_CSV}")
+    if not os.path.exists(ruta_csv):
+        print(f"❌ Error: No se encuentra el archivo en {ruta_csv}")
         return
 
-    df_actual = pd.read_csv(RUTA_CSV, sep=';')
+    df_actual = pd.read_csv(ruta_csv, sep=';')
     # Convertimos la columna Fecha a datetime para poder comparar
     df_actual['Fecha'] = pd.to_datetime(df_actual['Fecha'], errors='coerce')
 
     nuevos_registros = []
 
     # 4. Bucle de descarga por ciudad (Bilbao, Donostia, Vitoria)
-    for ciudad, m_id in MUNICIPIOS.items():
-        print(f"📥 Solicitando datos de {ciudad}...")
+    for ciudad, m_id in municipios.items():
+        print(f" Solicitando datos de {ciudad}...")
         url = f"https://api.euskadi.eus/pollen-quality/measurements/municipalities/{m_id}/from/{fecha_inicio}/to/{fecha_fin}"
         
         try:
@@ -62,7 +62,7 @@ def actualizar_desde_api():
                         valor = m.get('pollenCount', 0)
                         
                         # Buscamos el nombre de tu columna en el config.py
-                        columna = MAPEO_ESPECIES.get(str(esp_id).lower())
+                        columna = mapeo_especies.get(str(esp_id).lower())
                         if columna:
                             temp_dict[fecha_str][columna] = valor
                 
@@ -80,7 +80,7 @@ def actualizar_desde_api():
         df_nuevos['Fecha'] = pd.to_datetime(df_nuevos['Fecha'])
         
         # Borramos las filas viejas del CSV que coincidan con las fechas que acabamos de descargar
-        print("🧹 Borrando datos antiguos/vacíos para reescribir con datos reales...")
+        print(" Borrando datos antiguos/vacíos para reescribir con datos reales...")
         fechas_nuevas = df_nuevos['Fecha'].unique()
         df_actual = df_actual[~df_actual['Fecha'].isin(fechas_nuevas)]
         
@@ -98,11 +98,11 @@ def actualizar_desde_api():
         df_final = df_final.dropna(subset=['Fecha'])
         
         # Guardar cambios
-        df_final.to_csv(RUTA_CSV, sep=';', index=False)
+        df_final.to_csv(ruta_csv, sep=';', index=False)
         
-        print(f"✨ ¡Sincronización exitosa! Se han actualizado {len(df_nuevos)} registros.")
+        print(f"¡Sincronización exitosa! Se han actualizado {len(df_nuevos)} registros.")
     else:
-        print("📭 No se han encontrado datos nuevos en la API.")
+        print("No se han encontrado datos nuevos en la API.")
 
 if __name__ == "__main__":
     actualizar_desde_api()

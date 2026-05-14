@@ -49,7 +49,7 @@ sintomas_polen = {
 }
 
 # Mapeo de IDs de Municipios de la API de Euskadi
-MUNICIPIOS = {
+municipios = {
     'Bilbao': '020',
     'Donostia': '069',
     'Vitoria': '059'
@@ -57,7 +57,7 @@ MUNICIPIOS = {
 
 # Mapeo de IDs de la API a nombres de columnas del CSV
 # La API usa minúsculas y algunos guiones, lo estandarizamos
-MAPEO_ESPECIES = {
+mapeo_especies = {
     'poaceae': 'Poaceae',
     'platanus': 'Platanus',
     'betula': 'Betula',

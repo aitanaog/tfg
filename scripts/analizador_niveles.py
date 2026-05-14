@@ -18,10 +18,7 @@ def obtener_color_alerta(especie, valor):
         return "Bajo", "#28a745"      # Verde
 
 def calcular_indice_global(datos_ciudad):
-    """
-    Opcional: Calcula un resumen general de la ciudad 
-    basándose en el polen que esté más alto en ese momento.
-    """
+
     riesgos = []
     for especie, valor in datos_ciudad.items():
         if especie in umbrales_polen:

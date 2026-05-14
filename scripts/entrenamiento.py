@@ -9,15 +9,14 @@ import sys
 from config import sintomas_polen
 
 # 2. CONFIGURACIÓN DE RUTAS
-# Ajusta estas rutas a tu ordenador
-RUTA_DATOS = r'C:\Users\wence\OneDrive\Escritorio\Universidad\openJdk-25\TFG_Aitana\datos_procesados\polen_euskadi_final.csv'
-CARPETA_MODELOS = 'modelos_entrenados'
+ruta_datos = r'datos_procesados\polen_euskadi_final.csv'
+carpeta_modelos = 'modelos_entrenados'
 
-if not os.path.exists(CARPETA_MODELOS):
-    os.makedirs(CARPETA_MODELOS)
+if not os.path.exists(carpeta_modelos):
+    os.makedirs(carpeta_modelos)
 
 def cargar_y_preparar_datos():
-    df = pd.read_csv(RUTA_DATOS, sep=';')
+    df = pd.read_csv(ruta_datos, sep=';')
     df['Fecha'] = pd.to_datetime(df['Fecha'])
     return df
 
@@ -31,7 +30,7 @@ def entrenar_sistema_global():
     print(f"--- INICIANDO ENTRENAMIENTO PARA {len(ciudades)} CIUDADES Y {len(especies)} ESPECIES ---")
 
     for ciudad in ciudades:
-        print(f"\n📍 Procesando ciudad: {ciudad}")
+        print(f"\n Procesando ciudad: {ciudad}")
         for esp in especies:
             # Filtrado y limpieza por ciudad/especie
             df_esp = df[df['Ciudad'] == ciudad][['Fecha', esp]].copy()
@@ -76,7 +75,7 @@ def entrenar_sistema_global():
             
             # GUARDAR MODELO (.pkl)
             nombre_file = f"modelo_{ciudad}_{esp.replace('/', '_')}.pkl"
-            ruta_guardado = os.path.join(CARPETA_MODELOS, nombre_file)
+            ruta_guardado = os.path.join(carpeta_modelos, nombre_file)
             joblib.dump(modelo, ruta_guardado)
 
     # Exportar métricas a CSV para la memoria del TFG
@@ -84,7 +83,7 @@ def entrenar_sistema_global():
     df_resultados.to_csv('metricas_modelos.csv', index=False, sep=';', encoding='utf-8-sig')
     print("\n" + "="*40)
     print("✅ PROCESO COMPLETADO")
-    print(f"Modelos guardados en: {CARPETA_MODELOS}")
+    print(f"Modelos guardados en: {carpeta_modelos}")
     print("Archivo 'metricas_modelos.csv' generado para tu memoria.")
     print("="*40)
 
