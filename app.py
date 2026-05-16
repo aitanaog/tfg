@@ -119,7 +119,7 @@ if st.session_state['logueado']:
             # 2. PANEL DE PREVENCIÓN PERSONALIZADA (ALERGIA PRINCIPAL)
             # ---------------------------------------------------------
             st.divider()
-            nivel_manana, _ = obtener_color_alerta(alergia_principal, valor_manana_principal)
+            nivel_manana, _ = obtener_color_alerta(alergia_principal, valor_mañana_principal)
             
             col_info, col_recom = st.columns([1, 1])
 
