@@ -220,7 +220,7 @@ if st.session_state['logueado']:
                         st.warning(mensaje)
                     else:
                         st.balloons()
-                        st.success(f"### 🎯 Posible sensibilidad: **{resultado}** con una confianza de **{confianza}**")
+                        st.success(f"### 🎯 Posible sensibilidad: **{resultado}** ")
                         st.info(mensaje)
 
     except Exception as e:
