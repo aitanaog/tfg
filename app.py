@@ -142,6 +142,46 @@ if st.session_state['logueado']:
                     st.write("- Use gafas de sol.")
                 else:
                     st.write("- Puede realizar actividades normales.")
+                    
+            
+            # ---------------------------------------------------------
+            # NUEVO -> 3. ASISTENTE DE DIAGNÓSTICO (ALERTAS CRUZADAS)
+            # ---------------------------------------------------------
+            st.divider()
+            col_ia_text, col_ia_btn = st.columns([2, 1])
+            with col_ia_text:
+                st.subheader("🧬 Asistente de Diagnóstico ")
+                st.write(f"¿Sigues notando malestar incluso con niveles bajos de {alergia_principal}? Analizaremos si estás desarrollando una nueva sensibilidad.")
+            
+            with col_ia_btn:
+                btn_analizar_diagnosticado = st.button("🚀 Iniciar Análisis de IA", key="btn_ia_diag", use_container_width=True)
+
+            if btn_analizar_diagnosticado:
+                from scripts.analizador_diagnostico import generar_sugerencia_diagnostico
+                with st.spinner("Analizando correlaciones y patrones clínicos..."):
+                    resultado, mensaje, confianza = generar_sugerencia_diagnostico(st.session_state['id_usuario'], perfil['ciudad'])
+                    
+                    if resultado in ["Insuficiente", "Error"]:
+                        st.warning(mensaje)
+                    
+                    # CASO 1: El polen sospechoso de la IA es el mismo que ya tiene diagnosticado
+                    elif resultado.lower() == alergia_principal.lower():
+                        st.success(f"### ✅ Relación Confirmada")
+                        st.info(f"El motor analítico corrobora que tus síntomas actuales siguen fuertemente ligados a tu alergia principal a **{alergia_principal}**. {mensaje}")
+                    
+                    # CASO 2: La IA detecta un polen nuevo peligroso
+                    else:
+                        st.balloons()
+                        st.warning(f"### ⚠️ Alerta de Nueva Sensibilidad: **{resultado}**")
+                        st.markdown(f"""
+                        **¡Atención!** Aunque tu perfil indica que estás diagnosticado de *{alergia_principal}*, 
+                        nuestro motor inteligente ha detectado que tus síntomas de las últimas semanas guardan una relación mucho más estrecha 
+                        con los niveles ambientales de **{resultado}**. 
+                        
+                        Esto podría sugerir el desarrollo de una **alergia cruzada** o una nueva hipersensibilidad estacional.
+                        
+                        *Detalles del análisis:* {mensaje}
+                        """)
 
 
 
