@@ -215,12 +215,12 @@ if st.session_state['logueado']:
             if btn_analizar:
                 from scripts.analizador_diagnostico import generar_sugerencia_diagnostico
                 with st.spinner("Analizando correlaciones..."):
-                    resultado, mensaje = generar_sugerencia_diagnostico(st.session_state['id_usuario'], perfil['ciudad'])
+                    resultado, mensaje, confianza = generar_sugerencia_diagnostico(st.session_state['id_usuario'], perfil['ciudad'])
                     if resultado in ["Insuficiente", "Error"]:
                         st.warning(mensaje)
                     else:
                         st.balloons()
-                        st.success(f"### 🎯 Posible sensibilidad: **{resultado}**")
+                        st.success(f"### 🎯 Posible sensibilidad: **{resultado}** con una confianza de **{confianza}**")
                         st.info(mensaje)
 
     except Exception as e:
