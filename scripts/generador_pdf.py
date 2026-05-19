@@ -35,7 +35,7 @@ def exportar_pdf(id_usuario, ciudad, alergia_asignada=None):
         
         # 3. LÓGICA DE IA: DOBLE VALIDACIÓN (Lo nuevo que pedías)
         # Paso A: Consultamos a la IA qué polen es el más sospechoso este mes
-        alergia_ia, mensaje_ia = generar_sugerencia_diagnostico(id_usuario, ciudad)
+        alergia_ia, mensaje_ia, valor_r_ia = generar_sugerencia_diagnostico(id_usuario, ciudad)
         valor_r_ia = df_final['malestar'].corr(df_final[alergia_ia]) if alergia_ia in df_final.columns else 0.0
         valor_r_ia = 0.0 if np.isnan(valor_r_ia) else valor_r_ia
 
