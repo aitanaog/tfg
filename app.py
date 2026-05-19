@@ -145,7 +145,7 @@ if st.session_state['logueado']:
                     
             
             # ---------------------------------------------------------
-            # NUEVO -> 3. ASISTENTE DE DIAGNÓSTICO (ALERTAS CRUZADAS)
+            # 3. ASISTENTE DE DIAGNÓSTICO (ALERTAS CRUZADAS)
             # ---------------------------------------------------------
             st.divider()
             col_ia_text, col_ia_btn = st.columns([2, 1])
@@ -159,7 +159,7 @@ if st.session_state['logueado']:
             if btn_analizar_diagnosticado:
                 from scripts.analizador_diagnostico import generar_sugerencia_diagnostico
                 with st.spinner("Analizando correlaciones y patrones clínicos..."):
-                    resultado, mensaje= generar_sugerencia_diagnostico(st.session_state['id_usuario'], perfil['ciudad'])
+                    resultado, mensaje, confianza= generar_sugerencia_diagnostico(st.session_state['id_usuario'], perfil['ciudad'])
                     
                     if resultado in ["Insuficiente", "Error"]:
                         st.warning(mensaje)
