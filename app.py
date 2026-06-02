@@ -266,114 +266,114 @@ if st.session_state['logueado']:
     except Exception as e:
         st.error(f"Hubo un problema al cargar los datos: {e}")
 
-# --- SECCIÓN SÍNTOMAS ---
-st.divider()
-st.subheader("📝 Diario de Síntomas")
-st.info("Registra tu estado diario para ayudar a la IA a entender cómo te afectan los niveles de polen.")
-
-with st.form("form_sintomas"):
-    # 1. Nivel de malestar
-    malestar = st.select_slider(
-        "Nivel de malestar general", 
-        options=range(11), 
-        value=0, 
-        help="0: Sin síntomas, 10: Malestar extremo"
-    )
-    
-    # 2. Checkboxes de síntomas específicos 
-    st.write("**Selecciona los síntomas que presentas hoy:**")
-    
-    col_s1, col_s2, col_s3 = st.columns(3)
-    
-    with col_s1:
-        s_estornudos = st.checkbox("Estornudos")
-        s_rinitis = st.checkbox("Rinitis")
-        s_conjuntivitis = st.checkbox("Conjuntivitis")
-        s_picor_garganta = st.checkbox("Picor de garganta")
-        
-    with col_s2:
-        s_tos = st.checkbox("Tos")
-        s_asma = st.checkbox("Asma")
-        s_dolor_cabeza = st.checkbox("Dolor de Cabeza")
-        s_picor_nasal = st.checkbox("Picor nasal")
-        
-    with col_s3:
-        s_opresion = st.checkbox("Opresión torácica")
-        s_erupcion = st.checkbox("Erupción")
-        s_mucosidad = st.checkbox("Mucosidad")
-        
-    # 3. Medicación y notas
+    # --- SECCIÓN SÍNTOMAS ---
     st.divider()
-    col_m1, col_m2 = st.columns([1, 2])
-    with col_m1:
-        tmo_med = st.radio("¿Has tomado medicación?", ["No", "Sí"], horizontal=True)
-    with col_m2:
-        comentarios = st.text_input("Notas adicionales (ej: 'Mucho tiempo al aire libre')")
-    
-    submit_button = st.form_submit_button("Guardar Registro Diario")
+    st.subheader("📝 Diario de Síntomas")
+    st.info("Registra tu estado diario para ayudar a la IA a entender cómo te afectan los niveles de polen.")
 
-# Procesamiento del formulario en app.py
-if submit_button:
-    # Construcción de la lista de síntomas activos
-    sintomas_marcados = []
-    if s_conjuntivitis: sintomas_marcados.append('conjuntivitis')
-    if s_estornudos: sintomas_marcados.append('estornudos')
-    if s_rinitis: sintomas_marcados.append('rinitis')
-    if s_asma: sintomas_marcados.append('asma')
-    if s_picor_garganta: sintomas_marcados.append('picor_garganta')
-    if s_tos: sintomas_marcados.append('tos')
-    if s_dolor_cabeza: sintomas_marcados.append('dolor_cabeza')
-    if s_opresion: sintomas_marcados.append('opresion_toracica')
-    if s_picor_nasal: sintomas_marcados.append('picor_nasal')
-    if s_erupcion: sintomas_marcados.append('erupcion')
-    if s_mucosidad: sintomas_marcados.append('mucosidad')
-
-    # VALIDACIÓN: Comprobar si todo está vacío
-    if malestar == 0 and len(sintomas_marcados) == 0:
-        st.error("❌ No se puede guardar un registro vacío. Por favor, selecciona tu nivel de malestar o marca algún síntoma.")
-    else:
-        # Llamamos al backend pasándole únicamente los datos del CSV de síntomas
-        exito, msg = registrar_entrada_salud(
-            id_usuario=st.session_state['id_usuario'],
-            fecha=fecha_actual,
-            nivel=malestar,
-            sintomas_activos=sintomas_marcados,
-            medicacion=tmo_med,      
-            comentarios=comentarios         
+    with st.form("form_sintomas"):
+        # 1. Nivel de malestar
+        malestar = st.select_slider(
+            "Nivel de malestar general", 
+            options=range(11), 
+            value=0, 
+            help="0: Sin síntomas, 10: Malestar extremo"
         )
         
-        if exito:
-            st.success(msg)
+        # 2. Checkboxes de síntomas específicos 
+        st.write("**Selecciona los síntomas que presentas hoy:**")
+        
+        col_s1, col_s2, col_s3 = st.columns(3)
+        
+        with col_s1:
+            s_estornudos = st.checkbox("Estornudos")
+            s_rinitis = st.checkbox("Rinitis")
+            s_conjuntivitis = st.checkbox("Conjuntivitis")
+            s_picor_garganta = st.checkbox("Picor de garganta")
+            
+        with col_s2:
+            s_tos = st.checkbox("Tos")
+            s_asma = st.checkbox("Asma")
+            s_dolor_cabeza = st.checkbox("Dolor de Cabeza")
+            s_picor_nasal = st.checkbox("Picor nasal")
+            
+        with col_s3:
+            s_opresion = st.checkbox("Opresión torácica")
+            s_erupcion = st.checkbox("Erupción")
+            s_mucosidad = st.checkbox("Mucosidad")
+            
+        # 3. Medicación y notas
+        st.divider()
+        col_m1, col_m2 = st.columns([1, 2])
+        with col_m1:
+            tmo_med = st.radio("¿Has tomado medicación?", ["No", "Sí"], horizontal=True)
+        with col_m2:
+            comentarios = st.text_input("Notas adicionales (ej: 'Mucho tiempo al aire libre')")
+        
+        submit_button = st.form_submit_button("Guardar Registro Diario")
+
+    # Procesamiento del formulario en app.py
+    if submit_button:
+        # Construcción de la lista de síntomas activos
+        sintomas_marcados = []
+        if s_conjuntivitis: sintomas_marcados.append('conjuntivitis')
+        if s_estornudos: sintomas_marcados.append('estornudos')
+        if s_rinitis: sintomas_marcados.append('rinitis')
+        if s_asma: sintomas_marcados.append('asma')
+        if s_picor_garganta: sintomas_marcados.append('picor_garganta')
+        if s_tos: sintomas_marcados.append('tos')
+        if s_dolor_cabeza: sintomas_marcados.append('dolor_cabeza')
+        if s_opresion: sintomas_marcados.append('opresion_toracica')
+        if s_picor_nasal: sintomas_marcados.append('picor_nasal')
+        if s_erupcion: sintomas_marcados.append('erupcion')
+        if s_mucosidad: sintomas_marcados.append('mucosidad')
+
+        # VALIDACIÓN: Comprobar si todo está vacío
+        if malestar == 0 and len(sintomas_marcados) == 0:
+            st.error("❌ No se puede guardar un registro vacío. Por favor, selecciona tu nivel de malestar o marca algún síntoma.")
         else:
-            st.error(msg)
-    st.subheader("📂 Exportar Historial Médico")
-    col_pdf1, col_pdf2 = st.columns([2, 1])
-    
-    with col_pdf1:
-        st.write("Genera un documento PDF profesional con la evolución de tus síntomas y niveles de polen para facilitar el diagnóstico de tu alergólogo.")
-    
-    with col_pdf2:
-        if st.button("📄 Generar Informe PDF", use_container_width=True):
-            from scripts.generador_pdf import exportar_pdf
-            
-            # Determinamos si enviamos una alergia específica o no
-            alergia_usr = perfil['alergia_principal'] if perfil['diagnosticado'] == "Sí" else None
-            
-            with st.spinner("Compilando datos y generando PDF..."):
-                exito, resultado = exportar_pdf(st.session_state['id_usuario'], perfil['ciudad'], alergia_usr)
+            # Llamamos al backend pasándole únicamente los datos del CSV de síntomas
+            exito, msg = registrar_entrada_salud(
+                id_usuario=st.session_state['id_usuario'],
+                fecha=fecha_actual,
+                nivel=malestar,
+                sintomas_activos=sintomas_marcados,
+                medicacion=tmo_med,      
+                comentarios=comentarios         
+            )
             
             if exito:
-                with open(resultado, "rb") as f:
-                    st.download_button(
-                        label="📥 Descargar ahora",
-                        data=f,
-                        file_name=os.path.basename(resultado),
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-                st.success("¡Informe listo!")
+                st.success(msg)
             else:
-                st.error(f"No se pudo generar el informe: {resultado}")
+                st.error(msg)
+        st.subheader("📂 Exportar Historial Médico")
+        col_pdf1, col_pdf2 = st.columns([2, 1])
+        
+        with col_pdf1:
+            st.write("Genera un documento PDF profesional con la evolución de tus síntomas y niveles de polen para facilitar el diagnóstico de tu alergólogo.")
+        
+        with col_pdf2:
+            if st.button("📄 Generar Informe PDF", use_container_width=True):
+                from scripts.generador_pdf import exportar_pdf
+                
+                # Determinamos si enviamos una alergia específica o no
+                alergia_usr = perfil['alergia_principal'] if perfil['diagnosticado'] == "Sí" else None
+                
+                with st.spinner("Compilando datos y generando PDF..."):
+                    exito, resultado = exportar_pdf(st.session_state['id_usuario'], perfil['ciudad'], alergia_usr)
+                
+                if exito:
+                    with open(resultado, "rb") as f:
+                        st.download_button(
+                            label="📥 Descargar ahora",
+                            data=f,
+                            file_name=os.path.basename(resultado),
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
+                    st.success("¡Informe listo!")
+                else:
+                    st.error(f"No se pudo generar el informe: {resultado}")
 else:
     # ==========================================
     # PANTALLA: LOGIN / REGISTRO (SI NO ESTÁ LOGUEADO)
