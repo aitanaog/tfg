@@ -25,6 +25,17 @@ def registrar_usuario(id_usuario, password, ciudad, edad, tiene_diagnostico, pol
     tiene_diagnostico: bool (True si sabe qué alergia tiene, False si no)
     polen_especifico: str (Nombre del polen o 'No diagnosticado')
     """
+    if not str(id_usuario).strip():
+        return False, "Error: El usuario no puede estar vacío."
+    if not str(password).strip():
+        return False, "Error: La contraseña no puede estar vacía."
+    if ciudad == "Seleccione una ciudad..." or not str(ciudad).strip():
+        return False, "Error: Debe proporcionar una ciudad válida."
+    if int(edad) <= 0:
+        return False, "Error: La edad debe ser un número entero mayor que 0."
+    if tiene_diagnostico and polen_especifico == "Seleccione su alergia principal...":
+        return False, "Error: Debe especificar su alergia si está diagnosticado."
+        
     inicializar_usuarios()
     df = pd.read_csv(ruta_usuarios, sep=';')
     
@@ -35,7 +46,7 @@ def registrar_usuario(id_usuario, password, ciudad, edad, tiene_diagnostico, pol
         'id_usuario': id_usuario,
         'password_hash': encriptar_password(password),
         'ciudad': ciudad,
-        'edad': edad,
+        'edad': int(edad),
         'diagnosticado': "Si" if tiene_diagnostico else "No",
         'alergia_principal': polen_especifico if tiene_diagnostico else "No diagnosticado"
     }
