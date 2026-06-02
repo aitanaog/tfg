@@ -256,7 +256,7 @@ if st.session_state['logueado']:
             if btn_analizar:
                 from scripts.analizador_diagnostico import generar_sugerencia_diagnostico
                 with st.spinner("Analizando correlaciones..."):
-                    resultado, mensaje, confianza = generar_sugerencia_diagnostico(st.session_state['id_usuario'], perfil['ciudad'])
+                    resultado, mensaje = generar_sugerencia_diagnostico(st.session_state['id_usuario'], perfil['ciudad'])
                     if resultado in ["Insuficiente", "Error"]:
                         st.warning(mensaje)
                     else:
