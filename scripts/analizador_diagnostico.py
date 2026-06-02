@@ -14,8 +14,8 @@ def generar_sugerencia_diagnostico(id_usuario, ciudad):
         
         # 2. FILTRADO
         user_data = df_sintomas[df_sintomas['id_usuario'] == id_usuario].copy()
-        if len(user_data) < 15:
-            return "Insuficiente", "Se requieren al menos 15 días de registros para un análisis fiable."
+        if len(user_data) < 30:
+            return "Insuficiente", "Se requieren al menos 30 días de registros para un análisis fiable."
 
         # Cruzamos datos por fecha y ciudad
         polen_ciudad = df_polen[df_polen['Ciudad'] == ciudad]
@@ -72,7 +72,7 @@ def generar_sugerencia_diagnostico(id_usuario, ciudad):
         else:
             msg = "Tendencia leve. Se detecta una ligera coincidencia, pero los datos no son concluyentes todavía."
 
-        return culpable, msg, confianza  # Devolvemos la confianza también
+        return culpable, msg
 
     except Exception as e:
         return "Error", f"Error en el motor analítico: {str(e)}"
