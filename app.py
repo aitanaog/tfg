@@ -349,31 +349,31 @@ if st.session_state['logueado']:
         st.subheader("📂 Exportar Historial Médico")
         col_pdf1, col_pdf2 = st.columns([2, 1])
         
-        with col_pdf1:
-            st.write("Genera un documento PDF profesional con la evolución de tus síntomas y niveles de polen para facilitar el diagnóstico de tu alergólogo.")
+    with col_pdf1:
+        st.write("Genera un documento PDF profesional con la evolución de tus síntomas y niveles de polen para facilitar el diagnóstico de tu alergólogo.")
         
-        with col_pdf2:
-            if st.button("📄 Generar Informe PDF", use_container_width=True):
-                from scripts.generador_pdf import exportar_pdf
+    with col_pdf2:
+        if st.button("📄 Generar Informe PDF", use_container_width=True):
+            from scripts.generador_pdf import exportar_pdf
                 
-                # Determinamos si enviamos una alergia específica o no
-                alergia_usr = perfil['alergia_principal'] if perfil['diagnosticado'] == "Sí" else None
+            # Determinamos si enviamos una alergia específica o no
+            alergia_usr = perfil['alergia_principal'] if perfil['diagnosticado'] == "Sí" else None
                 
-                with st.spinner("Compilando datos y generando PDF..."):
-                    exito, resultado = exportar_pdf(st.session_state['id_usuario'], perfil['ciudad'], alergia_usr)
+            with st.spinner("Compilando datos y generando PDF..."):
+                exito, resultado = exportar_pdf(st.session_state['id_usuario'], perfil['ciudad'], alergia_usr)
                 
-                if exito:
-                    with open(resultado, "rb") as f:
-                        st.download_button(
-                            label="📥 Descargar ahora",
-                            data=f,
-                            file_name=os.path.basename(resultado),
-                            mime="application/pdf",
-                            use_container_width=True
-                        )
-                    st.success("¡Informe listo!")
-                else:
-                    st.error(f"No se pudo generar el informe: {resultado}")
+            if exito:
+                with open(resultado, "rb") as f:
+                    st.download_button(
+                        label="📥 Descargar ahora",
+                        data=f,
+                        file_name=os.path.basename(resultado),
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+                st.success("¡Informe listo!")
+            else:
+                st.error(f"No se pudo generar el informe: {resultado}")
 else:
     # ==========================================
     # PANTALLA: LOGIN / REGISTRO (SI NO ESTÁ LOGUEADO)
