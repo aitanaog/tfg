@@ -346,8 +346,8 @@ if st.session_state['logueado']:
                 st.success(msg)
             else:
                 st.error(msg)
-        st.subheader("📂 Exportar Historial Médico")
-        col_pdf1, col_pdf2 = st.columns([2, 1])
+    st.subheader("📂 Exportar Historial Médico")
+    col_pdf1, col_pdf2 = st.columns([2, 1])
         
     with col_pdf1:
         st.write("Genera un documento PDF profesional con la evolución de tus síntomas y niveles de polen para facilitar el diagnóstico de tu alergólogo.")
