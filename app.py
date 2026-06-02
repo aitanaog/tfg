@@ -5,6 +5,7 @@ import os
 from scripts.gestion_usuarios import obtener_perfil_usuario, validar_login, registrar_usuario
 from scripts.actualizador_api import actualizar_desde_api
 from scripts.analizador_niveles import obtener_color_alerta
+from scripts.gestion_sintomas import registrar_entrada_salud
 from scripts.config import umbrales_polen
 import zipfile
 import os
