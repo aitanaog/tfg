@@ -390,13 +390,49 @@ else:
 
     elif choice == "Registro":
         st.subheader("Crear nueva cuenta")
-        new_u = st.text_input("Usuario")
-        new_p = st.text_input("Contraseña", type='password')
-        c = st.selectbox("Ciudad", ["Bilbao", "Donostia", "Vitoria"])
-        e = st.number_input("Edad", 0, 100, 25)
-        d = st.radio("¿Diagnosticado?", ["No", "Sí"])
-        p_esp = st.selectbox("Alergia principal", options=list(umbrales_polen.keys())) if d == "Sí" else "No diagnosticado"
+        st.caption("Todos los campos de este formulario son obligatorios")
+        
+        new_u = st.text_input("Usuario *").strip()
+        new_p = st.text_input("Contraseña *", type='password').strip()
+        
+        opciones_ciudades = ["Seleccione una ciudad...", "Bilbao", "Donostia", "Vitoria"]
+        c = st.selectbox("Ciudad *", opciones_ciudades)
+        
+        e = st.number_input("Edad *", min_value=0, max_value=100, value=0, help="Introduzca una edad válida mayor que 0")
+        
+        d = st.radio("¿Está diagnosticado de alguna alergia? *", ["Seleccione una opción...", "No", "Sí"])
+        
+        p_esp = "No diagnosticado"
+        mostrar_alergia_selectbox = False
+        
+        if d == "Sí":
+            opciones_alergias = ["Seleccione su alergia principal..."] + list(umbrales_polen.keys())
+            p_esp = st.selectbox("Alergia principal *", opciones_alergias)
+            mostrar_alergia_selectbox = True
+            
         if st.button("Registrarme"):
-            exito, msg = registrar_usuario(new_u, new_p, c, e, (d=="Sí"), p_esp)
-            if exito: st.success(msg)
-            else: st.error(msg)
+            errores = []
+            
+            if not new_u:
+                errores.append("El campo 'Usuario' no puede estar vacío.")
+            if not new_p:
+                errores.append("El campo 'Contraseña' no puede estar vacío.")
+            if c == "Seleccione una ciudad...":
+                errores.append("Debe seleccionar una 'Ciudad' de la lista.")
+            if e <= 0:
+                errores.append("Debe introducir una 'Edad' válida (mayor que 0).")
+            if d == "Seleccione una opción...":
+                errores.append("Debe responder a la pregunta '¿¿Diagnosticado??'.")
+            if d == "Sí" and p_esp == "Seleccione su alergia principal...":
+                errores.append("Ha marcado que sí está diagnosticado, debe seleccionar su 'Alergia principal'.")
+                
+            if errores:
+                for error in errores:
+                    st.error(error)
+            else:
+                tiene_diag_bool = (d == "Sí")
+                exito, msg = registrar_usuario(new_u, new_p, c, e, tiene_diag_bool, p_esp)
+                if exito: 
+                    st.success(msg)
+                else: 
+                    st.error(msg)
