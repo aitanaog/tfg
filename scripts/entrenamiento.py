@@ -17,7 +17,8 @@ if not os.path.exists(carpeta_modelos):
 
 def cargar_y_preparar_datos():
     df = pd.read_csv(ruta_datos, sep=';')
-    df['Fecha'] = pd.to_datetime(df['Fecha'])
+    # 'mixed' le dice a Pandas que si encuentra formatos distintos, intente adivinarlos uno a uno
+    df['Fecha'] = pd.to_datetime(df['Fecha'], format='mixed', dayfirst=False) 
     return df
 
 def entrenar_sistema_global():
@@ -57,7 +58,7 @@ def entrenar_sistema_global():
             y_test = test[esp]
             
             # ENTRENAMIENTO
-            modelo = RandomForestRegressor(n_estimators=100, random_state=42)
+            modelo = RandomForestRegressor(n_estimators=50, max_depth=10, random_state=42)
             modelo.fit(X_train, y_train)
             
             # EVALUACIÓN
@@ -76,8 +77,10 @@ def entrenar_sistema_global():
             # GUARDAR MODELO (.pkl)
             nombre_file = f"modelo_{ciudad}_{esp.replace('/', '_')}.pkl"
             ruta_guardado = os.path.join(carpeta_modelos, nombre_file)
-            joblib.dump(modelo, ruta_guardado)
-
+            
+            # compress=3 es el estándar, puedes subir hasta 9 si siguen siendo grandes
+            joblib.dump(modelo, ruta_guardado, compress=3)
+            
     # Exportar métricas a CSV para la memoria del TFG
     df_resultados = pd.DataFrame(metricas_finales)
     df_resultados.to_csv('metricas_modelos.csv', index=False, sep=';', encoding='utf-8-sig')

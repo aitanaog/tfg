@@ -92,6 +92,28 @@ def obtener_perfil_usuario(id_usuario):
         
     return perfil
 
+def actualizar_perfil_usuario(id_usuario, nueva_ciudad, tiene_diagnostico, polen_especifico):
+    """
+    Actualiza los datos modificables del perfil de un usuario en el CSV.
+    """
+    if not os.path.exists(ruta_usuarios):
+        return False, "Error: No se encontró el archivo de registros."
+        
+    df = pd.read_csv(ruta_usuarios, sep=';')
+    
+    # Comprobar si el usuario existe
+    if id_usuario not in df['id_usuario'].values:
+        return False, "Usuario no encontrado."
+        
+    # Actualizar los campos en la fila correspondiente
+    df.loc[df['id_usuario'] == id_usuario, 'ciudad'] = nueva_ciudad
+    df.loc[df['id_usuario'] == id_usuario, 'diagnosticado'] = "Si" if tiene_diagnostico else "No"
+    df.loc[df['id_usuario'] == id_usuario, 'alergia_principal'] = polen_especifico if tiene_diagnostico else "No diagnosticado"
+    
+    # Guardar los cambios de vuelta en el CSV
+    df.to_csv(ruta_usuarios, index=False, sep=';')
+    return True, "Perfil actualizado con éxito."
+
 # --- PRUEBA DEL SISTEMA ---
 if __name__ == "__main__":
     # 1. Intentamos registrar a alguien
