@@ -6,7 +6,7 @@ from scripts.gestion_usuarios import obtener_perfil_usuario, validar_login, regi
 from scripts.actualizador_api import actualizar_desde_api
 from scripts.analizador_niveles import obtener_color_alerta
 from scripts.gestion_sintomas import registrar_entrada_salud
-from scripts.config import umbrales_polen
+from scripts.config import umbrales_polen, municipios
 from scripts.i18n import DICCIONARIO
 import zipfile
 
@@ -14,23 +14,19 @@ if not os.path.exists('modelos_entrenados'):
     with zipfile.ZipFile('modelos_entrenados.zip', 'r') as zip_ref:
         zip_ref.extractall('.')
         
-# 1. CONFIGURACIÓN INICIAL
 st.set_page_config(page_title="PolenGune", page_icon="🌿", layout="wide")
 
-# 2. INICIALIZACIÓN DE VARIABLES DE SESIÓN
+# INICIALIZACIÓN DE VARIABLES DE SESIÓN
 if 'logueado' not in st.session_state:
     st.session_state['logueado'] = False
 if 'actualizado_hoy' not in st.session_state:
     st.session_state['actualizado_hoy'] = False
 
-# =========================================================================
-# 3. SELECTOR GLOBAL DE IDIOMA EN LA SIDEBAR (BARRA LATERAL)
-# =========================================================================
+# SELECTOR GLOBAL DE IDIOMA EN LA SIDEBAR (BARRA LATERAL)
 idioma = st.sidebar.selectbox(DICCIONARIO["Castellano"]["selector_idioma"], ["Castellano", "Euskara"])
 
-# =========================================================================
-# 4. MODAL: EDICIÓN PERFIL
-# ========================================================================
+
+# EDICIÓN PERFIL
 @st.dialog("⚙️ Editar Perfil de Usuario" if idioma == "Castellano" else "⚙️ Erabiltzailearen Profila Editatu")
 def mostrar_edicion():
     if 'perfil' not in st.session_state:
@@ -38,9 +34,9 @@ def mostrar_edicion():
         return
         
     perfil_actual = st.session_state['perfil']
-    st.write("Modifique los campos que necesite actualizar de su perfil clínico o de residencia:" if idioma == "Castellano" else "Aldatu eguneratu behar dituzun profilen eremuak:")
+    st.write("Modifique los campos que necesite actualizar" if idioma == "Castellano" else "Aldatu eguneratu behar dituzun profilen eremuak:")
     
-    ciudades = ["Bilbao", "Donostia", "Vitoria"]
+    ciudades = list(municipios.keys())
     indice_ciudad = ciudades.index(perfil_actual['ciudad']) if perfil_actual['ciudad'] in ciudades else 0
     nueva_ciudad = st.selectbox(DICCIONARIO[idioma]["lbl_ciudad"], options=ciudades, index=indice_ciudad)
     
@@ -69,18 +65,23 @@ def mostrar_edicion():
             st.error(msg)
 
 # =========================================================================
-# 5. FLUJO DE PANTALLAS (DASHBOARD LOGUEADO)
+# FLUJO DE PANTALLAS (LOGUEADO)
 # =========================================================================
 
 if st.session_state['logueado']:
     perfil = st.session_state.get('perfil', obtener_perfil_usuario(st.session_state['id_usuario']))
 
     # --- MOTOR DE DATOS Y PREDICCIÓN ---
+    # Solo se ejecuta una vez por sesión/día (controlado por 'actualizado_hoy').
+
     if not st.session_state['actualizado_hoy']:
         with st.spinner(DICCIONARIO[idioma]["st_sincro"]):
             try:
-                actualizar_desde_api()
-                from scripts.predictor import predecir_siguientes_dias
+                errores = actualizar_desde_api()
+                if errores:
+                    st.warning(f"No se pudieron actualizar datos para: {', '.join(errores)}")
+                    
+                from scripts.predictor import predecir_siguientes_dias #solo se carga el modelo de predicción cuando realmente hace falta (mejora el tiempo de arranque).
                 predecir_siguientes_dias(perfil['ciudad'])
                 st.session_state['actualizado_hoy'] = True
                 st.rerun() 
@@ -92,9 +93,9 @@ if st.session_state['logueado']:
         st.header(DICCIONARIO[idioma]["hdr_cuenta"])
         st.write(f"{DICCIONARIO[idioma]['txt_usuario']}{st.session_state['id_usuario']}")
         st.write(f"{DICCIONARIO[idioma]['txt_ciudad']}{perfil['ciudad']}")
-        st.write(f"🩺 **{DICCIONARIO[idioma].get('txt_alergia', 'Alergia:')}** {perfil.get('alergia_principal', 'No diagnosticado')}")
+        st.write(f"🩺 **{DICCIONARIO[idioma]['txt_alergia']}** {perfil.get('alergia_principal', 'No diagnosticado')}")
         
-        if st.button(DICCIONARIO[idioma].get("btn_editar_perfil", "⚙️ Editar Perfil"), use_container_width=True):
+        if st.button(DICCIONARIO[idioma]["btn_editar_perfil"], use_container_width=True):
             mostrar_edicion()
             
         if st.button(DICCIONARIO[idioma]["btn_logout"], use_container_width=True):
@@ -108,13 +109,13 @@ if st.session_state['logueado']:
     st.title(f"{DICCIONARIO[idioma]['ttl_panel']}{perfil['ciudad']}")
     st.info(f"{DICCIONARIO[idioma]['inf_consulta']}{fecha_actual.strftime('%d/%m/%Y')}")
 
-    # =========================================================================
-    # 🌟 SECCIÓN 2: ESTADO DE LOS PÓLENES (PRIMERO EN PANTALLA)
-    # =========================================================================
+
+    # SECCIÓN 2: ESTADO DE LOS PÓLENES 
+
     valor_mañana_principal = 0.0  # Variable de control
     
     try:
-        ruta_csv = 'datos_processed/polen_euskadi_final.csv' if os.path.exists('datos_processed/polen_euskadi_final.csv') else 'datos_procesados/polen_euskadi_final.csv'
+        ruta_csv = 'datos_procesados/polen_euskadi_final.csv'
         df = pd.read_csv(ruta_csv, sep=';')
         df['Fecha'] = pd.to_datetime(df['Fecha'], format='mixed').dt.date
         df_ciudad = df[df['Ciudad'] == perfil['ciudad']].sort_values(by='Fecha')
@@ -129,11 +130,7 @@ if st.session_state['logueado']:
         if perfil['diagnosticado'] == "Si":
             alergia_principal = perfil['alergia_principal']
             st.subheader(f"{DICCIONARIO[idioma]['sub_critico']}{alergia_principal}")
-            
-            etiquetas = ["Hace 2 días" if idioma == "Castellano" else "Duela 2 egun", 
-                        "Ayer" if idioma == "Castellano" else "Atzo", 
-                        "Predicción de hoy" if idioma == "Castellano" else "Gaurko aurreikuspena", 
-                        "Predicción de mañana" if idioma == "Castellano" else "Biharko aurreikuspena"]
+            etiquetas = DICCIONARIO[idioma]["etiquetas_dias"]
             cols_principal = st.columns(4)
 
             for i, fecha in enumerate(dias_interes):
@@ -143,11 +140,15 @@ if st.session_state['logueado']:
                 
                 nivel, _ = obtener_color_alerta(alergia_principal, valor_num)
                 with cols_principal[i]:
+                    # Usamos 'delta' para mostrar el nivel de alerta (Bajo/Moderado/Alto...)
                     st.metric(label=etiquetas[i], value=f"{valor_num:.2f}", delta=nivel)
 
             st.write("---")
             st.subheader(DICCIONARIO[idioma]["lbl_otros"])
-            columnas_polen = [col for col in df_ciudad.columns if col not in ['Fecha', 'Ciudad', 'Año']]
+            columnas_polen = []
+            for col in df_ciudad.columns:
+                if col not in ['Fecha', 'Ciudad', 'Año']:
+                    columnas_polen.append(col)
             otros_polenes = [col for col in columnas_polen if col != alergia_principal]
             
             cols_otros = st.columns(4)
@@ -161,23 +162,23 @@ if st.session_state['logueado']:
                     st.caption(f"{valor_hoy:.1f} - {nivel_otros}")
 
             st.divider()
-            nivel_manana, _ = obtener_color_alerta(alergia_principal, valor_mañana_principal)
+            nivel_mañana, _ = obtener_color_alerta(alergia_principal, valor_mañana_principal)
             col_info, col_recom = st.columns([1, 1])
 
             with col_info:
-                st.write(DICCIONARIO[idioma]["sub_manana"])
-                if nivel_manana in ["Alto", "Muy Alto"]:
-                    st.error(f"{DICCIONARIO[idioma]['alt_critica']}{nivel_manana.upper()} de {alergia_principal}.")
-                elif nivel_manana == "Moderado":
+                st.write(DICCIONARIO[idioma]["sub_mañana"])
+                if nivel_mañana in ["Alto", "Muy Alto"]:
+                    st.error(f"{DICCIONARIO[idioma]['alt_critica']}{nivel_mañana.upper()} de {alergia_principal}.")
+                elif nivel_mañana == "Moderado":
                     st.warning(DICCIONARIO[idioma]["alt_mod"])
                 else:
                     st.success(f"{DICCIONARIO[idioma]['alt_baja']}{alergia_principal}.")
 
             with col_recom:
                 st.write(DICCIONARIO[idioma]["sub_recom"])
-                if nivel_manana in ["Alto", "Muy Alto"]:
+                if nivel_mañana in ["Alto", "Muy Alto"]:
                     for rec in DICCIONARIO[idioma]["rec_alto"]: st.write(rec)
-                elif nivel_manana == "Moderado":
+                elif nivel_mañana == "Moderado":
                     for rec in DICCIONARIO[idioma]["rec_mod"]: st.write(rec)
                 else:
                     for rec in DICCIONARIO[idioma]["rec_bajo"]: st.write(rec)
@@ -187,7 +188,7 @@ if st.session_state['logueado']:
             st.subheader(DICCIONARIO[idioma]["sub_hoy"])
             st.write(DICCIONARIO[idioma]["txt_hoy"])
             
-            columnas_excluir = ['Fecha', 'Ciudad', 'Año', 'Mes', 'Dia', 'Unnamed: 0']
+            columnas_excluir = ['Fecha', 'Ciudad', 'Año']
             plantas = [c for c in df_ciudad.columns if c not in columnas_excluir]
             
             fila_hoy = df_ciudad[df_ciudad['Fecha'] == hoy]
@@ -195,49 +196,52 @@ if st.session_state['logueado']:
 
             col_alertas, col_bajos = st.columns([2, 1])
 
+            # Recorremos 'plantas' UNA sola vez, clasificando cada una como
+            # "en alerta" (nivel Moderado o superior) o "baja"
+            
+            plantas_alerta = []
+            plantas_bajas = []
+
+            for p in plantas:
+                try:
+                    val_hoy = float(fila_hoy[p].values[0]) if not fila_hoy.empty else 0.0
+                    val_man = float(fila_mañana[p].values[0]) if not fila_mañana.empty else 0.0
+                    nivel, _ = obtener_color_alerta(p, val_hoy)
+
+                    if nivel == "Bajo":
+                        plantas_bajas.append((p, val_hoy))
+                    else:
+                        if val_man > val_hoy:
+                            tendencia = DICCIONARIO[idioma]["tend_subiendo"]
+                        else:
+                            tendencia = DICCIONARIO[idioma]["tend_bajando"]
+                        if abs(val_man - val_hoy) < 0.1:
+                            tendencia = DICCIONARIO[idioma]["tend_estable"]
+                        plantas_alerta.append((p, val_hoy, val_man, nivel, tendencia))
+                except (IndexError, KeyError):
+                    continue
+
             with col_alertas:
                 st.markdown(DICCIONARIO[idioma]["lbl_mod_alt"])
-                hay_alertas = False
-                for p in plantas:
-                    try:
-                        val_hoy = float(fila_hoy[p].values[0]) if not fila_hoy.empty else 0.0
-                        val_man = float(fila_mañana[p].values[0]) if not fila_mañana.empty else 0.0
-                        nivel, _ = obtener_color_alerta(p, val_hoy)
-
-                        if nivel != "Bajo":
-                            hay_alertas = True
-                            if idioma == "Castellano":
-                                tendencia = "Subiendo 📈" if val_man > val_hoy else "Bajando 📉"
-                                if abs(val_man - val_hoy) < 0.1: tendencia = "Estable ➡️"
-                            else:
-                                tendencia = "Igotzen 📈" if val_man > val_hoy else "Jaisten 📉"
-                                if abs(val_man - val_hoy) < 0.1: tendencia = "Eonkorra ➡️"
-
-                            with st.expander(f"**{p}**: {val_hoy:.1f} ({nivel})", expanded=True):
-                                c1, c2 = st.columns(2)
-                                c1.metric("Hoy" if idioma == "Castellano" else "Gaur", f"{val_hoy:.1f}")
-                                c2.metric("Mañana (Pred)" if idioma == "Castellano" else "Bihar (Aurr)", f"{val_man:.1f}", delta=tendencia, delta_color="normal")
-                    except:
-                        continue
-                if not hay_alertas:
+                if not plantas_alerta:
                     st.success(DICCIONARIO[idioma]["txt_tranquilo"])
+                for p, val_hoy, val_man, nivel, tendencia in plantas_alerta:
+                    with st.expander(f"**{p}**: {val_hoy:.1f} ({nivel})", expanded=True):
+                        c1, c2 = st.columns(2)
+                        c1.metric(DICCIONARIO[idioma]["lbl_hoy_metric"], f"{val_hoy:.1f}")
+                        c2.metric(DICCIONARIO[idioma]["lbl_manana_metric"], f"{val_man:.1f}", delta=tendencia, delta_color="normal")
 
             with col_bajos:
                 st.markdown(DICCIONARIO[idioma]["lbl_bajos"])
-                for p in plantas:
-                    try:
-                        val_hoy = float(fila_hoy[p].values[0]) if not fila_hoy.empty else 0.0
-                        nivel, _ = obtener_color_alerta(p, val_hoy)
-                        if nivel == "Bajo":
-                            st.caption(f"✅ {p}: {val_hoy:.1f}")
-                    except:
-                        continue
+                for p, val_hoy in plantas_bajas:
+                    st.caption(f"✅ {p}: {val_hoy:.1f}")
+                    
     except Exception as e:
         st.error(f"Hubo un problema al cargar los datos de polen: {e}")
 
-    # =========================================================================
-    # 🌟 SECCIÓN 3: DIARIO DE SÍNTOMAS (DESPUÉS DEL POLEN)
-    # =========================================================================
+    
+    # SECCIÓN 3: DIARIO DE SÍNTOMAS
+
     st.divider()
     st.subheader(DICCIONARIO[idioma]["ttl_diario"])
     st.info(DICCIONARIO[idioma]["inf_diario"])
@@ -248,24 +252,24 @@ if st.session_state['logueado']:
         col_s1, col_s2, col_s3 = st.columns(3)
         
         with col_s1:
-            s_estornudos = st.checkbox("Estornudos" if idioma == "Castellano" else "Usantzak")
-            s_rinitis = st.checkbox("Rinitis" if idioma == "Castellano" else "Rinitisa")
-            s_conjuntivitis = st.checkbox("Conjuntivitis" if idioma == "Castellano" else "Konjuntibitisa")
-            s_picor_garganta = st.checkbox("Picor de garganta" if idioma == "Castellano" else "Eztarriko azkura")
+            s_estornudos = st.checkbox(DICCIONARIO[idioma]["sint_estornudos"])
+            s_rinitis = st.checkbox(DICCIONARIO[idioma]["sint_rinitis"])
+            s_conjuntivitis = st.checkbox(DICCIONARIO[idioma]["sint_conjuntivitis"])
+            s_picor_garganta = st.checkbox(DICCIONARIO[idioma]["sint_picor_garganta"])
         with col_s2:
-            s_tos = st.checkbox("Tos" if idioma == "Castellano" else "Kösk")
-            s_asma = st.checkbox("Asma" if idioma == "Castellano" else "Asma")
-            s_dolor_cabeza = st.checkbox("Dolor de Cabeza" if idioma == "Castellano" else "Buruko mina")
-            s_picor_nasal = st.checkbox("Picor nasal" if idioma == "Castellano" else "Sudurreko azkura")
+            s_tos = st.checkbox(DICCIONARIO[idioma]["sint_tos"])
+            s_asma = st.checkbox(DICCIONARIO[idioma]["sint_asma"])
+            s_dolor_cabeza = st.checkbox(DICCIONARIO[idioma]["sint_dolor_cabeza"])
+            s_picor_nasal = st.checkbox(DICCIONARIO[idioma]["sint_picor_nasal"])
         with col_s3:
-            s_opresion = st.checkbox("Opresión torácica" if idioma == "Castellano" else "Bularreko estutasuna")
-            s_erupcion = st.checkbox("Erupción" if idioma == "Castellano" else "Erupzioa")
-            s_mucosidad = st.checkbox("Mucosidad" if idioma == "Castellano" else "Mukositatea")
+            s_opresion = st.checkbox(DICCIONARIO[idioma]["sint_opresion"])
+            s_erupcion = st.checkbox(DICCIONARIO[idioma]["sint_erupcion"])
+            s_mucosidad = st.checkbox(DICCIONARIO[idioma]["sint_mucosidad"])
             
         st.divider()
         col_m1, col_m2 = st.columns([1, 2])
         with col_m1:
-            tmo_med = st.radio(DICCIONARIO[idioma]["lbl_med"], ["No" if idioma == "Castellano" else "Ez", "Sí" if idioma == "Castellano" else "Bai"], horizontal=True)
+            tmo_med = st.radio(DICCIONARIO[idioma]["lbl_med"], [DICCIONARIO[idioma]["opc_no"], DICCIONARIO[idioma]["opc_si"]], horizontal=True)
         with col_m2:
             comentarios = st.text_input(DICCIONARIO[idioma]["lbl_comentarios"])
         
@@ -273,22 +277,22 @@ if st.session_state['logueado']:
 
     if submit_button:
         sintomas_marcados = []
-        if s_conjuntivitis: sintomas_marcados.append('conjuntivitis')
         if s_estornudos: sintomas_marcados.append('estornudos')
         if s_rinitis: sintomas_marcados.append('rinitis')
-        if s_asma: sintomas_marcados.append('asma')
+        if s_conjuntivitis: sintomas_marcados.append('conjuntivitis')
         if s_picor_garganta: sintomas_marcados.append('picor_garganta')
         if s_tos: sintomas_marcados.append('tos')
+        if s_asma: sintomas_marcados.append('asma')
         if s_dolor_cabeza: sintomas_marcados.append('dolor_cabeza')
-        if s_opresion: sintomas_marcados.append('opresion_toracica')
         if s_picor_nasal: sintomas_marcados.append('picor_nasal')
+        if s_opresion: sintomas_marcados.append('opresion_toracica')
         if s_erupcion: sintomas_marcados.append('erupcion')
         if s_mucosidad: sintomas_marcados.append('mucosidad')
 
         if malestar == 0 and len(sintomas_marcados) == 0:
             st.error(DICCIONARIO[idioma]["err_diario_vacio"])
         else:
-            med_backend = "Sí" if "veces" in tmo_med.lower() or tmo_med == "Bai" or tmo_med == "Sí" else "No"
+            med_backend = "Sí" if tmo_med in ("Sí", "Bai") else "No"
             exito, msg = registrar_entrada_salud(
                 id_usuario=st.session_state['id_usuario'], fecha=fecha_actual, nivel=malestar,
                 sintomas_activos=sintomas_marcados, medicacion=med_backend, comentarios=comentarios         
@@ -296,9 +300,8 @@ if st.session_state['logueado']:
             if exito: st.success(msg)
             else: st.error(msg)
 
-    # =========================================================================
-    # 🌟 SECCIÓN 4: ASISTENTE DE DIAGNÓSTICO RETROSPECTIVO (LUEGO DEL DIARIO)
-    # =========================================================================
+
+    # SECCIÓN 4: ASISTENTE DE DIAGNÓSTICO
     st.divider()
     col_ia_text, col_ia_btn = st.columns([2, 1])
     
@@ -317,7 +320,7 @@ if st.session_state['logueado']:
         with st.spinner(DICCIONARIO[idioma]["st_analizando_pats"] if perfil['diagnosticado'] == "Si" else DICCIONARIO[idioma]["st_analizando"]):
             
             if perfil['diagnosticado'] == "Si":
-                resultado, mensaje, confianza = generar_sugerencia_diagnostico(st.session_state['id_usuario'], perfil['ciudad'])
+                resultado, mensaje = generar_sugerencia_diagnostico(st.session_state['id_usuario'], perfil['ciudad'])
                 if resultado in ["Insuficiente", "Error"]:
                     st.warning(mensaje)
                 elif resultado.lower() == perfil['alergia_principal'].lower():
@@ -336,9 +339,9 @@ if st.session_state['logueado']:
                     st.success(f"{DICCIONARIO[idioma]['ia_posible_sens'].format(resultado=resultado)}")
                     st.info(mensaje)
 
-    # =========================================================================
-    # 🌟 SECCIÓN 5: EXPORTAR HISTORIAL A PDF (PIE DE PÁGINA)
-    # =========================================================================
+    
+    # SECCIÓN 5: EXPORTAR HISTORIAL A PDF
+    
     st.divider()
     st.subheader(DICCIONARIO[idioma]["ttl_exportar"])
     col_pdf1, col_pdf2 = st.columns([2, 1])
@@ -367,9 +370,9 @@ if st.session_state['logueado']:
             else:
                 st.error(f"{DICCIONARIO[idioma]['err_pdf']}{resultado}")
 else:
-    # =========================================================================
+
     # PANTALLA: LOGIN / REGISTRO (SI NO ESTÁ LOGUEADO)
-    # =========================================================================
+    
     st.title(DICCIONARIO[idioma]["titulo_principal"])
     choice = st.sidebar.selectbox(DICCIONARIO[idioma]["menu_acceso"], ["Login", "Registro"])
     
@@ -393,21 +396,19 @@ else:
         new_u = st.text_input(DICCIONARIO[idioma]["lbl_usuario_req"]).strip()
         new_p = st.text_input(DICCIONARIO[idioma]["lbl_pass_req"], type='password').strip()
         
-        opciones_ciudades = [DICCIONARIO[idioma]["sel_ciudad"], "Bilbao", "Donostia", "Vitoria"]
+        opciones_ciudades = [DICCIONARIO[idioma]["sel_ciudad"]] + list(municipios.keys())
         c = st.selectbox(DICCIONARIO[idioma]["lbl_ciudad"], opciones_ciudades)
         
         e = st.number_input(DICCIONARIO[idioma]["lbl_edad"], min_value=0, max_value=100, value=0, help=DICCIONARIO[idioma]["hlp_edad"])
         
-        opciones_diag = [DICCIONARIO[idioma]["sel_opcion"], "No" if idioma == "Castellano" else "Ez", "Sí" if idioma == "Castellano" else "Bai"]
+        opciones_diag = [DICCIONARIO[idioma]["sel_opcion"], DICCIONARIO[idioma]["opc_no"], DICCIONARIO[idioma]["opc_si"]]
         d = st.radio(DICCIONARIO[idioma]["lbl_diag"], opciones_diag)
         
         p_esp = "No diagnosticado"
-        mostrar_alergia_selectbox = False
         
         if d == "Sí" or d == "Bai":
             opciones_alergias = [DICCIONARIO[idioma]["sel_alergia"]] + list(umbrales_polen.keys())
             p_esp = st.selectbox(DICCIONARIO[idioma]["lbl_alergia"], opciones_alergias)
-            mostrar_alergia_selectbox = True
             
         if st.button(DICCIONARIO[idioma]["btn_registrar"]):
             errores = []
