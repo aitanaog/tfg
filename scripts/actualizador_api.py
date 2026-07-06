@@ -4,51 +4,61 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-# 1. Configuración de rutas
-# Añadimos la raíz al path para poder importar el archivo config.py
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from scripts.config import municipios, mapeo_especies
 
-# Ruta al CSV histórico
+
 ruta_csv = os.path.join(os.path.dirname(__file__), '..', 'datos_procesados', 'polen_euskadi_final.csv')
 
 def actualizar_desde_api():
+    """
+    Descarga los últimos 15 días de datos de polen desde la API de 
+    Open Data Euskadi para cada municipio configurado, y actualiza
+    el CSV histórico sustituyendo las fechas que se solapen con
+    los datos nuevos descargados.
+    """
+    
     print("Iniciando sincronización con Open Data Euskadi...")
     
-    # 2. ventana de tiempo = últimos 15 días
+    ### 1. CONSULTA DE LOS ÚLTIMOS 15 DÍAS  ###
+    
     hoy = datetime.now()
-    fecha_inicio_dt = hoy - timedelta(days=90)
+    fecha_inicio_dt = hoy - timedelta(days=15)
     
     fecha_inicio = fecha_inicio_dt.strftime('%Y-%m-%d')
     fecha_fin = hoy.strftime('%Y-%m-%d')
     
     print(f" Ventana de actualización: del {fecha_inicio} al {fecha_fin}")
 
-    # 3. Leer el CSV actual
+    # Leer el CSV actual
     if not os.path.exists(ruta_csv):
-        print(f"❌ Error: No se encuentra el archivo en {ruta_csv}")
+        print(f" Error: No se encuentra el archivo en {ruta_csv}")
         return
 
     df_actual = pd.read_csv(ruta_csv, sep=';')
-    # Convertimos la columna Fecha a datetime para poder comparar
-    df_actual['Fecha'] = pd.to_datetime(df_actual['Fecha'], errors='coerce')
+    df_actual['Fecha'] = pd.to_datetime(df_actual['Fecha'], errors='coerce')        # Se convierte la columna 'Fecha' del CSV a formato fecha para poder operar con ella.
 
     nuevos_registros = []
-
-    # 4. Bucle de descarga por ciudad (Bilbao, Donostia, Vitoria)
+    errores_ciudades = []
+    
+    # Bucle de descarga por ciudad (Bilbao, Donostia, Vitoria)
     for ciudad, m_id in municipios.items():
         print(f" Solicitando datos de {ciudad}...")
         url = f"https://api.euskadi.eus/pollen-quality/measurements/municipalities/{m_id}/from/{fecha_inicio}/to/{fecha_fin}"
         
+        ### 2. PROCESAMIENTO DE LA RESPUESTA ###
         try:
             response = requests.get(url, timeout=25)
             if response.status_code == 200:
                 mediciones_json = response.json()
                 
                 temp_dict = {}
+                
+                # Recorre los días que ha devuelto la API.
                 for dia_obj in mediciones_json:
                     fecha_str = dia_obj.get('date')
-                    lista_mediciones = dia_obj.get('measurements', [])
+                    lista_mediciones = dia_obj.get('measurements', [])      # Extrae la lista de mediciones de polen.
                     
                     if not fecha_str:
                         continue
@@ -61,40 +71,45 @@ def actualizar_desde_api():
                         esp_id = m.get('specieId')
                         valor = m.get('pollenCount', 0)
                         
-                        # Buscamos el nombre de tu columna en el config.py
+                        # Buscamos el nombre de la columna en el config.py
                         columna = mapeo_especies.get(str(esp_id).lower())
                         if columna:
                             temp_dict[fecha_str][columna] = valor
                 
-                # Añadimos los días procesados de esta ciudad a la lista general
+                # Pasa los datos del diccionario a la lista general de nuevos registros.
                 nuevos_registros.extend(list(temp_dict.values()))
                 
             else:
-                print(f"⚠️ Error API en {ciudad}: {response.status_code}")
+                print(f" Error API en {ciudad}: {response.status_code}")
+                errores_ciudades.append(ciudad)
         except Exception as e:
-            print(f"❌ Fallo de conexión en {ciudad}: {e}")
+            print(f" Fallo de conexión en {ciudad}: {e}")
+            errores_ciudades.append(ciudad)
 
-    # 5. Integración y Limpieza
+
+
     if nuevos_registros:
         df_nuevos = pd.DataFrame(nuevos_registros)
         df_nuevos['Fecha'] = pd.to_datetime(df_nuevos['Fecha'])
         
-        # Borramos las filas viejas del CSV que coincidan con las fechas que acabamos de descargar
-        print(" Borrando datos antiguos/vacíos para reescribir con datos reales...")
-        fechas_nuevas = df_nuevos['Fecha'].unique()
-        df_actual = df_actual[~df_actual['Fecha'].isin(fechas_nuevas)]
+        ### 3. ACTUALIZACIÓN DEL HISTÓRICO ###
+        print(" Borrando datos antiguos/vacíos para reescribir con datos actualizados...")
         
-        # Unimos lo viejo con lo nuevo
+        fechas_nuevas = df_nuevos['Fecha'].unique()
+        df_actual = df_actual[~df_actual['Fecha'].isin(fechas_nuevas)]              # Filtra el CSV antiguo para BORRAR las filas cuyas fechas coincidan con las nuevas.
+        
+        #Se une lo viejo con lo nuevo
         df_final = pd.concat([df_actual, df_nuevos], sort=False)
         
-        # Ordenamos por fecha y ciudad para que el CSV no sea un caos
+        ### 4. INTEGRACIÓN Y LIMPIEZA ###
+        
         df_final = df_final.sort_values(['Fecha', 'Ciudad'])
         
-        # Rellenar con 0.0 SOLO las columnas de polen (numéricas), no la Fecha ni la Ciudad
+        # Rellenar con 0.0 las columnas que tengan valores NaN
         columnas_polen = df_final.columns.difference(['Fecha', 'Ciudad'])
         df_final[columnas_polen] = df_final[columnas_polen].fillna(0.0)
 
-        # Y por seguridad, borrar cualquier fila que se haya quedado sin fecha antes de guardar
+        # Borrar cualquier fila que se haya quedado sin fecha antes de guardar
         df_final = df_final.dropna(subset=['Fecha'])
         
         # Guardar cambios
@@ -103,6 +118,10 @@ def actualizar_desde_api():
         print(f"¡Sincronización exitosa! Se han actualizado {len(df_nuevos)} registros.")
     else:
         print("No se han encontrado datos nuevos en la API.")
+        
+    
+    return errores_ciudades  # lista vacía = todo ok
+
 
 if __name__ == "__main__":
     actualizar_desde_api()

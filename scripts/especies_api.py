@@ -18,10 +18,10 @@ def listar_especies_api():
             print("-" * 40)
 
         else:
-            print(f"❌ Error: La API respondió con código {response.status_code}")
+            print(f"Error: La API respondió con código {response.status_code}")
             
     except Exception as e:
-        print(f"❌ No se pudo conectar: {e}")
+        print(f"No se pudo conectar: {e}")
 
 if __name__ == "__main__":
     listar_especies_api()

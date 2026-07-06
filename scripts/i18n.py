@@ -47,9 +47,10 @@ DICCIONARIO = {
         "txt_alergia": "Alergia:",
         
         # Modo A: Diagnosticado
+        "etiquetas_dias": ["Hace 2 días", "Ayer", "Predicción de hoy", "Predicción de mañana"],
         "sub_critico": "📊 Seguimiento Crítico: ",
         "lbl_otros": "🌐 Otros niveles en tu zona (Hoy)",
-        "sub_manana": "### 🛡️ Estado para mañana",
+        "sub_mañana": "### 🛡️ Estado para mañana",
         "alt_critica": "⚠️ **ALERTA CRÍTICA:** Nivel ",
         "alt_mod": "🔔 **PRECAUCIÓN:** Niveles moderados para mañana.",
         "alt_baja": "✅ **DÍA TRANQUILO:** Niveles bajos de ",
@@ -64,6 +65,11 @@ DICCIONARIO = {
         "lbl_mod_alt": "### ⚠️ Niveles Moderados / Altos",
         "lbl_bajos": "### 🟢 Niveles Bajos",
         "txt_tranquilo": "No hay niveles de riesgo detectados para hoy. ¡Día tranquilo!",
+        "tend_subiendo": "Subiendo 📈",
+        "tend_bajando": "Bajando 📉",
+        "tend_estable": "Estable ➡️",
+        "lbl_hoy_metric": "Hoy",
+        "lbl_mañana_metric": "Mañana (Pred)",
         
         # Asistente de IA
         "ttl_asistente": "🧬 Asistente de Diagnóstico ",
@@ -88,7 +94,20 @@ DICCIONARIO = {
         "lbl_comentarios": "Notas adicionales (ej: 'Mucho tiempo al aire libre')",
         "btn_diario": "Guardar Registro Diario",
         "err_diario_vacio": "❌ No se puede guardar un registro vacío. Por favor, selecciona tu nivel de malestar o marca algún síntoma.",
-        
+        "sint_estornudos": "Estornudos",
+        "sint_rinitis": "Rinitis",
+        "sint_conjuntivitis": "Conjuntivitis",
+        "sint_picor_garganta": "Picor de garganta",
+        "sint_tos": "Tos",
+        "sint_asma": "Asma",
+        "sint_dolor_cabeza": "Dolor de Cabeza",
+        "sint_picor_nasal": "Picor nasal",
+        "sint_opresion": "Opresión torácica",
+        "sint_erupcion": "Erupción",
+        "sint_mucosidad": "Mucosidad",
+        "opc_no": "No",
+        "opc_si": "Sí",
+
         # Exportar PDF
         "ttl_exportar": "📂 Exportar Historial Médico",
         "txt_exportar": "Genera un documento PDF profesional con la evolución de tus síntomas y niveles de polen para facilitar el diagnóstico de tu alergólogo.",
@@ -143,9 +162,10 @@ DICCIONARIO = {
         "txt_alergia": "Alergia:",
         
         # Modo A: Diagnosticado
+        "etiquetas_dias": ["Duela 2 egun", "Atzo", "Gaurko aurreikuspena", "Biharko aurreikuspena"],
         "sub_critico": "📊 Jarraipen Kritikoa: ",
         "lbl_otros": "🌐 Beste polen mailak zure eremuan (Gaur)",
-        "sub_manana": "### 🛡️ Biharreko egoera",
+        "sub_mañana": "### 🛡️ Biharreko egoera",
         "alt_critica": "⚠️ **ALERTA KRITIKOA:** Maila ",
         "alt_mod": "🔔 **KONTUZ:** Maila moderatuak biharko.",
         "alt_baja": "✅ **EGUN LASAIA:** Polen maila baxuak: ",
@@ -160,6 +180,11 @@ DICCIONARIO = {
         "lbl_mod_alt": "### ⚠️ Maila Moderatuak / Altuak",
         "lbl_bajos": "### 🟢 Maila Baxuak",
         "txt_tranquilo": "Ez da arrisku mailarik detektatu gaurko. Egun lasaia!",
+        "tend_subiendo": "Igotzen 📈",
+        "tend_bajando": "Jaisten 📉",
+        "tend_estable": "Egonkorra ➡️",
+        "lbl_hoy_metric": "Gaur",
+        "lbl_mañana_metric": "Bihar (Aurr)",
         
         # Asistente de IA
         "ttl_asistente": "🧬 Diagnostiko Laguntzailea ",
@@ -184,6 +209,19 @@ DICCIONARIO = {
         "lbl_comentarios": "Ohar gehigarriak (adib: 'Denbora asko aire librean')",
         "btn_diario": "Gorde Eguneroko Erregistroa",
         "err_diario_vacio": "❌ Ezin da erregistro huts bat gorde. Mesedez, hautatu zure ondoeza maila edo markatu sintomaren bat.",
+        "sint_estornudos": "Usantzak",
+        "sint_rinitis": "Rinitisa",
+        "sint_conjuntivitis": "Konjuntibitisa",
+        "sint_picor_garganta": "Eztarriko azkura",
+        "sint_tos": "Eztula",
+        "sint_asma": "Asma",
+        "sint_dolor_cabeza": "Buruko mina",
+        "sint_picor_nasal": "Sudurreko azkura",
+        "sint_opresion": "Bularreko estutasuna",
+        "sint_erupcion": "Erupzioa",
+        "sint_mucosidad": "Mukositatea",
+        "opc_no": "Ez",
+        "opc_si": "Bai",
         
         # Exportar PDF
         "ttl_exportar": "📂 Historial Medikoa Esportatu",

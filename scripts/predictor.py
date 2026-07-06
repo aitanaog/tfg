@@ -23,15 +23,14 @@ def predecir_siguientes_dias(ciudad):
     nueva_fila_mañana = {'Fecha': mañana, 'Ciudad': ciudad}
 
     for esp in especies:
-        # 1. Intentar cargar el modelo específico que creó tu script
+        
         nombre_modelo = f"modelo_{ciudad}_{esp.replace('/', '_')}.pkl"
         ruta_modelo = os.path.join(carpeta_modelos, nombre_modelo)
         
         if os.path.exists(ruta_modelo):
             modelo = joblib.load(ruta_modelo)
             
-            # 2. Preparar los datos de entrada (Features) igual que en el entrenamiento
-            # Necesitamos: dia_año, lag_1, lag_2, media_7d
+            # Obtenemos: dia_año, lag_1, lag_2, media_7d
             ultimos_datos = df_ciudad[esp].tail(10).tolist()
             
             if len(ultimos_datos) >= 7:
@@ -56,10 +55,8 @@ def predecir_siguientes_dias(ciudad):
             nueva_fila_hoy[esp] = 0.0
             nueva_fila_mañana[esp] = 0.0
 
-    # 3. Guardar estas filas en el CSV para que app.py las lea
     df_preds = pd.DataFrame([nueva_fila_hoy, nueva_fila_mañana])
     
-    # Concatenar y evitar duplicados de fecha
     df_final = pd.concat([df, df_preds]).drop_duplicates(subset=['Fecha', 'Ciudad'], keep='last')
     df_final.to_csv(ruta_csv, index=False, sep=';')
-    print(f"✅ Predicciones integradas para {ciudad}")
+    print(f" Predicciones integradas para {ciudad}")

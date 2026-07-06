@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import hashlib # Para no guardar las contraseñas en texto plano (Seguridad)
 
-# Configuración de rutas
+
 ruta_usuarios = os.path.join(os.path.dirname(__file__), '..', 'datos_usuarios', 'usuarios.csv')
 
 def inicializar_usuarios():
@@ -122,6 +122,6 @@ if __name__ == "__main__":
     
     # 2. Intentamos loguearnos
     if validar_login('aitana99', '12345'):
-        print("🔓 Acceso concedido")
+        print("Acceso concedido")
     else:
-        print("🔒 Contraseña incorrecta")
+        print("Contraseña incorrecta")

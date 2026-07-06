@@ -33,7 +33,7 @@ def exportar_pdf(id_usuario, ciudad, alergia_asignada=None):
         df_ciudad = df_p[df_p['Ciudad'] == ciudad]
         df_final = pd.merge(user_data, df_ciudad, left_on='fecha', right_on='Fecha', how='left')
         
-        # 3. LÓGICA DE IA: DOBLE VALIDACIÓN (Lo nuevo que pedías)
+        # 3. LÓGICA DE IA
         # Paso A: Consultamos a la IA qué polen es el más sospechoso este mes
         alergia_ia, mensaje_ia = generar_sugerencia_diagnostico(id_usuario, ciudad)
         valor_r_ia = df_final['malestar'].corr(df_final[alergia_ia]) if alergia_ia in df_final.columns else 0.0
@@ -73,14 +73,14 @@ def exportar_pdf(id_usuario, ciudad, alergia_asignada=None):
         pdf.cell(0, 10, f"Historial Diario y Niveles de {alergia_sospechosa}", 0, 1)
         pdf.set_font("Arial", size=9)
         
-        # Cabeceras (ajustamos anchos para la nueva columna)
+        # Cabeceras
         pdf.cell(22, 8, "Fecha", 1, 0, 'C', True)
         pdf.cell(18, 8, "Malestar", 1, 0, 'C', True)
         pdf.cell(25, 8, f"Nivel {alergia_sospechosa[:5]}", 1, 0, 'C', True) # Columna nueva
         pdf.cell(25, 8, "Medicación", 1, 0, 'C', True)
         pdf.cell(100, 8, "Comentarios", 1, 1, 'C', True)
 
-        # Filas de datos (últimos 15 registros para que quepan bien)
+        # Filas de datos (últimos 15 registros)
         pdf.set_font("Arial", size=8)
         for index, row in df_final.sort_values('fecha', ascending=False).head(15).iterrows():
             # Tarea 1: Manejo de "Sin comentarios"
@@ -94,7 +94,7 @@ def exportar_pdf(id_usuario, ciudad, alergia_asignada=None):
             pdf.cell(25, 8, str(row['medicacion']), 1)
             pdf.cell(100, 8, comentario[:65], 1, 1)
 
-        # 6. ANÁLISIS AUTOMÁTICO DE CORRELACIÓN (Tarea 2)
+        # 6. ANÁLISIS AUTOMÁTICO DE CORRELACIÓN
         pdf.ln(10)
         pdf.set_font("Arial", 'B', 12)
         pdf.set_text_color(0, 51, 102) # Azul oscuro profesional
